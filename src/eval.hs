@@ -16,14 +16,16 @@ import Syntax
 TO DO:
 1) Add Booleans to the language *CHECK*
 2) implement the if then else expression *CHECK*
-3) Implement letrec (*Done but hacky *)
+3) Implement letrec *Check*
 4) Add continuation support to the language (call/cc)
-5) Integrate type checking / inference
+5) Integrate type checking / inference *CHECK*
 6) pretty printer
 6) Add universal function definitions
 7) Modules ??????
 8) write parser lexer to get rid of s-expressions
-
+9) Add Pairs, fst, snd 
+10) Polymorphism
+11) Add parrallel "||" operator
 ----------}
 
 -- ### BEGIN MaybeWriter Monad Definition ###
