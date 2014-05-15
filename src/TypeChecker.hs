@@ -16,6 +16,7 @@ import Substitution
 -- Mapping from TypeVariables to Types
 type Context = Map Var Type 
 
+
 type TcMonad a = 
       WriterT [Constraint]   -- gathers constraints        
       (StateT  TypeVar       -- generates next FreshVar
@@ -58,6 +59,20 @@ replace x t constraints = if not (Set.member x (freeTypeVars t))
                                    return (Map.insert x t sub)
                             else throwError ("Circular Type: " ++ show x ++ " = " ++ show t)
 
+
+-- [quantify g t] takes a context [g] and a type [t] and finds all type variables in [t] that are also not used in [g] and forms a type scheme from these type variables and [t] 
+quantify :: Type -> PolyContext -> TypeScheme
+quantify typ pContext = Scheme typ (Set.difference (freeTypeVars typ) (freeVarsPcontext pContext))
+
+
+instantiate :: TypeScheme -> TcMonad Type
+instantiate (Scheme typ varSet) = do
+                                    s <- foldM substFreshVar Map.empty (Set.toList varSet)
+                                    return (applySubst s typ )                              
+substFreshVar sub var = do 
+                      newFresh <- freshVar                                                                      
+                      return (Map.union (Map.singleton var (TVar newFresh)) sub)
+                      
 -- [check e env] typechecks e in the context env and generates a type and a set of constraints
 -- or returns an error on failiure
 check :: Exp -> Context -> TcMonad Type 
@@ -72,11 +87,6 @@ check (Mult n1 n2)  context = arithCheck n1 n2 context
 check (Div n1 n2)   context = arithCheck n1 n2 context
 check (Eq n1 n2) context    = bExpCheck n1 n2 context
 
-check (Let f e1 e2) context = do 
-                                t1 <- check e1 context
-                                t2 <- check e2 (Map.insert f t1 context)
-                                return t2
-
 check (App e1 e2) context   = do
                                 tvar <- freshVar
                                 t1 <- check e1 context
@@ -89,6 +99,20 @@ check (Lambda x e) context  = do
                                 t2 <- check e (Map.insert x (TVar t1) context)
                                 return(TArrow (TVar t1) t2)  
 
+
+check (Let f e1 e2) context = do 
+                                t1 <- check e1 context
+                                t2 <- check e2 (Map.insert f t1 context)
+                                return t2
+-- TODO : CLean this up                                                    
+check (LetRec f (Lambda x e1) e2)  context = do
+                                              tvar_x <- freshVar
+                                              tvar_resf <- freshVar
+                                              t1 <- check e1  (Map.insert f (TArrow (TVar tvar_x) (TVar tvar_resf)) (Map.insert x (TVar tvar_x) context))  
+                                              t2 <- check e2 (Map.insert f (TArrow (TVar tvar_x) (TVar tvar_resf)) context)
+                                              tell [Equal t1 (TVar tvar_resf)]
+                                              return t2                                  
+
 check (If cond thenBranch elseBranch) context = do
                                                     tCond <- check cond context
                                                     tThen <- check thenBranch context
@@ -96,7 +120,6 @@ check (If cond thenBranch elseBranch) context = do
                                                     tell [Equal tCond TBool] 
                                                     tell [Equal tThen tElse]
                                                     return tElse
-
 
 
 --- Check Helper Functions ----------------------------
