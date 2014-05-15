@@ -14,7 +14,6 @@ import Tests
 import Substitution
 
 -- Mapping from TypeVariables to Types
-type Context = Map Var Type 
 
 
 type TcMonad a = 
@@ -60,7 +59,7 @@ replace x t constraints = if not (Set.member x (freeTypeVars t))
 
 
 -- [quantify g t] takes a context [g] and a type [t] and finds all type variables in [t] that are also not used in [g] and forms a type scheme from these type variables and [t] 
-quantify :: Type -> PolyContext -> TypeScheme
+quantify :: Type -> Context -> TypeScheme
 quantify typ pContext = Scheme typ (Set.difference (freeTypeVars typ) (freeVarsPcontext pContext))
 
 
@@ -94,20 +93,20 @@ check (App e1 e2) context   = do
 
 check (Lambda x e) context  = do 
                                 t1 <- freshVar 
-                                t2 <- check e (Map.insert x (TVar t1) context)
+                                t2 <- check e (Map.insert x (newScheme t1) context)
                                 return(TArrow (TVar t1) t2)  
 
 
 check (Let f e1 e2) context = do 
                                 t1 <- check e1 context
-                                t2 <- check e2 (Map.insert f t1 context)
+                                t2 <- check e2 (Map.insert f (quantify t1 context) context)
                                 return t2
 -- TODO : CLean this up                                                    
 check (LetRec f (Lambda x e1) e2)  context = do
                                               tvar_x <- freshVar
                                               tvar_resf <- freshVar
-                                              t1 <- check e1  (Map.insert f (TArrow (TVar tvar_x) (TVar tvar_resf)) (Map.insert x (TVar tvar_x) context))  
-                                              t2 <- check e2 (Map.insert f (TArrow (TVar tvar_x) (TVar tvar_resf)) context)
+                                              t1 <- check e1  (Map.insert f (emptyScheme(TArrow (TVar tvar_x) (TVar tvar_resf))) (Map.insert x (newScheme tvar_x) context))  
+                                              t2 <- check e2 (Map.insert f  (emptyScheme(TArrow (TVar tvar_x) (TVar tvar_resf))) context)
                                               tell [Equal t1 (TVar tvar_resf)]
                                               return t2                                  
 
@@ -145,9 +144,7 @@ bExpCheck n1 n2 context = do
 
 typeLookup x context = case (Map.lookup x context) of 
                         Nothing -> throwError ("Free Variable: " ++ show x)
-                        Just a -> do
-                                    tell [Equal a a]
-                                    return a                                 
+                        Just a -> instantiate a                                 
 --- END Check Helper Functions ----------------------- 
 
                                    

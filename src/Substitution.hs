@@ -17,20 +17,24 @@ type VarSet =  Set.Set TypeVar
 
 data TypeScheme = Scheme Type VarSet
 
+newScheme tvar = Scheme (TVar tvar ) Set.empty
+
+emptyScheme t = Scheme t Set.empty
+
 -- Final Substitution for each variable
 type Subst = Map Var Type 
 
 -- Type equality constraints
 data Constraint = Equal Type Type
 
-type PolyContext = Map Var TypeScheme 
+type Context = Map Var TypeScheme 
 
 
 -- SHOULD THIS BE A FOLD?       
 substConstr :: Type -> Type -> [Constraint]-> [Constraint]
 substConstr var replacementType constraints = List.map (\(Equal t1 t2) -> (Equal (substitute var replacementType t1)
                                                                                 (substitute var replacementType t2)))  constraints
-substPolyContext :: Subst -> PolyContext -> PolyContext
+substPolyContext :: Subst -> Context -> Context
 substPolyContext sub pContext = let subst_mapping v (Scheme t varSet) cons = Map.insert v (Scheme (applySubst sub t) varSet) cons in
                                 Map.foldrWithKey subst_mapping Map.empty pContext 
 
@@ -63,7 +67,7 @@ freeTypeVars t = case t of
                   TVar x -> Set.singleton x 
                   TArrow t1 t2 -> Set.union (freeTypeVars t1) (freeTypeVars t2)
 
-freeVarsPcontext :: PolyContext -> VarSet
+freeVarsPcontext :: Context -> VarSet
 freeVarsPcontext pContext=
     Map.fold (\ (Scheme t vs) freeVarSet -> Set.union (freeTypeVars t) freeVarSet) Set.empty pContext 
 
