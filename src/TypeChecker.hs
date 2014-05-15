@@ -39,7 +39,6 @@ writerState m = evalStateT (runWriterT m) "a"
 
 
 --[unify c] solves the set of constraints c if possible, and returns the most general substitution
--- or returns error if no solution is possible.  
 unify :: [Constraint] -> Either String Subst 
 unify [] =  return Map.empty
 unify ((Equal t1 t2): xs) = if (t1 == t2) 
@@ -74,7 +73,6 @@ substFreshVar sub var = do
                       return (Map.union (Map.singleton var (TVar newFresh)) sub)
                       
 -- [check e env] typechecks e in the context env and generates a type and a set of constraints
--- or returns an error on failiure
 check :: Exp -> Context -> TcMonad Type 
 check (IntLit x) _    = return TInt
 check (BoolLit b) _   = return TBool 
