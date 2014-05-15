@@ -60,7 +60,7 @@ replace x t constraints = if not (Set.member x (freeTypeVars t))
 
 -- [quantify g t] takes a context [g] and a type [t] and finds all type variables in [t] that are also not used in [g] and forms a type scheme from these type variables and [t] 
 quantify :: Type -> Context -> TypeScheme
-quantify typ pContext = Scheme typ (Set.difference (freeTypeVars typ) (freeVarsPcontext pContext))
+quantify typ pContext = Scheme typ (Set.difference (freeVarsPcontext pContext) (freeTypeVars typ))
 
 
 instantiate :: TypeScheme -> TcMonad Type
