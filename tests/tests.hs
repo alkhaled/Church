@@ -113,7 +113,7 @@ e15 = parse [sexp|
 |]
 
 e16 = parse [sexp|
-(let x "=" 3 in ((lambda (f) (f x)) (lambda (x) (plus x 1))))
+(let x "=" 3 in ((lambda (f) (f x)) (lambda (x) (add x 1))))
 |]
 
 e17 = parse [sexp|
@@ -127,7 +127,7 @@ e18 = parse [sexp|
 --Factorial
 e19 = parse [sexp|
 (letrec f "=" 
-        (lambda (x) (if (eq x 0) then 1 else (mult x (f (minus x 1) ) ) ) )
+        (lambda (x) (if (eq x 0) then 1 else (mult x (f (sub x 1) ) ) ) )
    in (f 10))
 |]
 
@@ -165,4 +165,18 @@ e34 = parse [sexp|
 (let f "=" (lambda (x)  (add y 35)) in 
 (let y "=" 100 in 
 (f 7))))
+|]
+
+-- should fail since non-poly x is bound to int and bool
+e325 = parse [sexp|
+((lambda (x)
+   (let b "=" (lambda(y) (x y)) in
+   (let c "=" (b true) in
+   (b 12)))) (lambda (x) x))
+|]
+
+e35 = parse [sexp|
+(let a "=" (lambda (x) x) in 
+(let b "=" (a 1) in 
+  (a false)))
 |]
