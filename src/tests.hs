@@ -166,3 +166,17 @@ e34 = parse [sexp|
 (let y "=" 100 in 
 (f 7))))
 |]
+
+-- should fail since non-poly x is bound to int and bool
+e325 = parse [sexp|
+((lambda (x)
+   (let b "=" (lambda(y) (x y)) in
+   (let c "=" (b true) in
+   (b 12)))) (lambda (x) x))
+|]
+
+e35 = parse [sexp|
+(let a "=" (lambda (x) x) in 
+(let b "=" (a 1) in 
+  (a false)))
+|]

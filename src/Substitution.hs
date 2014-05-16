@@ -34,8 +34,8 @@ type Context = Map Var TypeScheme
 substConstr :: Type -> Type -> [Constraint]-> [Constraint]
 substConstr var replacementType constraints = List.map (\(Equal t1 t2) -> (Equal (substitute var replacementType t1)
                                                                                 (substitute var replacementType t2)))  constraints
-substPolyContext :: Subst -> Context -> Context
-substPolyContext sub pContext = let subst_mapping v (Scheme t varSet) cons = Map.insert v (Scheme (applySubst sub t) varSet) cons in
+substContext :: Subst -> Context -> Context
+substContext sub pContext = let subst_mapping v (Scheme t varSet) cons = Map.insert v (Scheme (applySubst sub t) varSet) cons in
                                 Map.foldrWithKey subst_mapping Map.empty pContext 
 
 

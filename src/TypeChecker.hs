@@ -22,6 +22,7 @@ type TcMonad a =
       (Either  String))      -- error messages for Free Variables
       a
 
+
 -- [typeCheck e] is the main function that typechecks the expression e and returns its type
 -- or an error if it does not typecheck
 typeCheck :: Exp -> Either String Type  
@@ -59,8 +60,18 @@ replace x t constraints = if not (Set.member x (freeTypeVars t))
 
 
 -- [quantify g t] takes a context [g] and a type [t] and finds all type variables in [t] that are also not used in [g] and forms a type scheme from these type variables and [t] 
-quantify :: Type -> Context -> TypeScheme
-quantify typ pContext = Scheme typ (Set.difference (freeVarsPcontext pContext) (freeTypeVars typ))
+quantify :: TcMonad Type -> Context -> TcMonad (TypeScheme, Context)
+quantify typ context =  do
+                  (t, cons) <- listen typ
+                  case (unify cons) of
+                    Left err -> throwError err
+                    Right subst  -> do
+                                     let t' = (applySubst subst t) 
+                                     let context' = (substContext subst context)
+                                     let freeVars = (Set.difference  (freeTypeVars t') (freeVarsPcontext context'))
+                                     return ((Scheme t' freeVars) , context')
+
+ 
 
 
 instantiate :: TypeScheme -> TcMonad Type
@@ -69,7 +80,7 @@ instantiate (Scheme typ varSet) = do
                                     return (applySubst s typ )                              
 substFreshVar sub var = do 
                       newFresh <- freshVar                                                                      
-                      return (Map.union (Map.singleton var (TVar newFresh)) sub)
+                      return (Map.insert var (TVar newFresh) sub)
                       
 -- [check e env] typechecks e in the context env and generates a type and a set of constraints
 check :: Exp -> Context -> TcMonad Type 
@@ -97,9 +108,9 @@ check (Lambda x e) context  = do
                                 return(TArrow (TVar t1) t2)  
 
 
-check (Let f e1 e2) context = do 
-                                t1 <- check e1 context
-                                t2 <- check e2 (Map.insert f (quantify t1 context) context)
+check (Let f e1 e2) context = do
+                                (t1, context') <- quantify (check e1 context) context  
+                                t2 <- check e2 (Map.insert f t1 context')
                                 return t2
 -- TODO : CLean this up                                                    
 check (LetRec f (Lambda x e1) e2)  context = do
