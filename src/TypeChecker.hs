@@ -70,13 +70,13 @@ quantify typ context =  do
 --[instantiate t] takes a type scheme (t s) and returns and substitutes fresh vars for all TypVars in  s
 instantiate :: TypeScheme -> TcMonad Type
 instantiate (Scheme typ varSet) = do
-                                    s <- foldM substFreshVar Map.empty (Set.toList varSet)
-                                    return (applySubst s typ) 
+                                   s <- foldM substFreshVar Map.empty (Set.toList varSet)
+                                   return (applySubst s typ) 
 
 -- helper function that generates freshvars for instantiate 
 substFreshVar sub var = do 
-                      newFresh <- freshVar                                                                      
-                      return (Map.insert var (TVar newFresh) sub)                             
+                         newFresh <- freshVar                                                                      
+                         return (Map.insert var (TVar newFresh) sub)                             
                       
 -- [check e env] typechecks e in the context env and generates a type and a set of constraints
 check :: Exp -> Context -> TcMonad Type 
@@ -89,24 +89,42 @@ check (Plus n1 n2)  context = arithCheck n1 n2 context
 check (Minus n1 n2) context = arithCheck n1 n2 context
 check (Mult n1 n2)  context = arithCheck n1 n2 context
 check (Div n1 n2)   context = arithCheck n1 n2 context
-check (Eq n1 n2) context    = bExpCheck n1 n2 context
+check (Eq n1 n2)    context = bExpCheck n1 n2 context
 
-check (App e1 e2) context   = do
-                                tvar <- freshVar
-                                t1 <- check e1 context
-                                t2 <- check e2 context
-                                tell [Equal t1 (TArrow t2 (TVar tvar))]
-                                return (TVar tvar)
+check (Pair e1 e2)  context = do
+                               t1 <- check e1 context
+                               t2 <- check e2 context
+                               return (TPair t1 t2)
+check (Fst e)       context = do
+                               x <- freshVar
+                               y <- freshVar
+                               t <- check e1 context
+                               tell [Equal t (TPair (TVar x) (TVar y))]
+                               return (TVar x)
 
-check (Lambda x e) context  = do 
-                                t1 <- freshVar 
-                                t2 <- check e (Map.insert x (newScheme t1) context)
-                                return(TArrow (TVar t1) t2)  
+check (Snd e)       context = do
+                               x <- freshVar
+                               y <- freshVar
+                               t <- check e1 context
+                               tell [Equal t (TPair (TVar x) (TVar y))]
+                               return (TVar y)
+
+check (App e1 e2)   context = do
+                               tvar <- freshVar
+                               t1 <- check e1 context
+                               t2 <- check e2 context
+                               tell [Equal t1 (TArrow t2 (TVar tvar))]
+                               return (TVar tvar)
+
+check (Lambda x e)  context = do 
+                               t1 <- freshVar 
+                               t2 <- check e (Map.insert x (newScheme t1) context)
+                               return(TArrow (TVar t1) t2)  
 
 check (Let f e1 e2) context = do
-                                (t1, context') <- quantify (check e1 context) context  
-                                t2 <- check e2 (Map.insert f t1 context')
-                                return t2
+                               (t1, context') <- quantify (check e1 context) context  
+                               t2 <- check e2 (Map.insert f t1 context')
+                               return t2
 -- TODO : CLean this up                                                    
 check (LetRec f (Lambda x e1) e2)  context = do
                                               tvar_x <- freshVar
@@ -117,41 +135,37 @@ check (LetRec f (Lambda x e1) e2)  context = do
                                               return t2                                  
 
 check (If cond thenBranch elseBranch) context = do
-                                                    tCond <- check cond context
-                                                    tThen <- check thenBranch context
-                                                    tElse <- check elseBranch context
-                                                    tell [Equal tCond TBool] 
-                                                    tell [Equal tThen tElse]
-                                                    return tElse
+                                                 tCond <- check cond context
+                                                 tThen <- check thenBranch context
+                                                 tElse <- check elseBranch context
+                                                 tell [Equal tCond TBool] 
+                                                 tell [Equal tThen tElse]
+                                                 return tElse
 
 --- Check Helper Functions ----------------------------
 freshVar :: TcMonad TypeVar
 freshVar = do
-  s <- get
-  put $  s ++ "1"
-  return s      
+            s <- get
+            put $  s ++ "1"
+            return s      
 
 arithCheck :: Exp  -> Exp -> Context -> TcMonad Type
 arithCheck n1 n2 context = do 
-                                t1 <- check n1 context
-                                t2 <- check n1 context
-                                tell [Equal t1 TInt]
-                                tell [Equal t2 TInt]
-                                return TInt
+                            t1 <- check n1 context
+                            t2 <- check n1 context
+                            tell [Equal t1 TInt]
+                            tell [Equal t2 TInt]
+                            return TInt
 
 bExpCheck :: Exp  -> Exp -> Context -> TcMonad Type
 bExpCheck n1 n2 context = do 
-                                t1 <- check n1 context
-                                t2 <- check n1 context
-                                tell [Equal t1 TInt]
-                                tell [Equal t2 TInt]
-                                return TBool
+                           t1 <- check n1 context
+                           t2 <- check n1 context
+                           tell [Equal t1 TInt]
+                           tell [Equal t2 TInt]
+                           return TBool
 
 typeLookup x context = case (Map.lookup x context) of 
                         Nothing -> throwError ("Free Variable: " ++ show x)
                         Just a -> instantiate a                                 
 --- END Check Helper Functions ----------------------- 
-
-                                   
-
-                           

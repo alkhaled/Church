@@ -93,6 +93,10 @@ coerceBool :: Val -> MaybeWriter String Bool
 coerceBool (BoolVal b) = mwReturn b
 coerceBool v = mwThrow ("Expected Bool but recieved: " ++ show v)
 
+coercePair :: Val -> MaybeWriter String Val
+coercePair (PairVal v1 v2) = mwReturn (PairVal v1 v2)
+coercePair v = mwThrow ("Expected Pair but recieved: " ++ show v)
+
 evalBool op  x  y = mwReturn (BoolVal (op x y)) 
 evalBool op v1 v2 = mwThrow("Exception: Cannot perform equality expression: ("++ 
                                      ") on values: (" ++ show v1 ++") (" ++ show v2 ++" )") 
@@ -162,6 +166,19 @@ evalM (App e1 e2) env = do
 
 evalM (Lambda x e) env = return (Closure x e env)
 
+evalM (Pair e1 e2 ) env = do 
+                            v1 <- evalM e1 env
+                            v2 <- evalM e2 env 
+                            return (PairVal v1 v2)
+
+evalM (Fst e) env = do 
+                      (PairVal v1 v2) <- coercePair =<< evalM e env
+                      return(v1)
+
+evalM (Snd e) env = do 
+                      (PairVal v1 v2) <- coercePair =<< evalM e env
+                      return(v2)
+                      
 evalM (Let f e1 e2) env = do 
                            res1 <- evalM e1 env
                            evalM e2 (Map.insert f res1 env)

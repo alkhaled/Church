@@ -8,6 +8,9 @@ data Exp =
     Var String            -- x
   | Lambda String Exp     -- (lambda (x) e)
   | App Exp Exp           -- (e1 e2)
+  | Pair Exp Exp          -- (e1,e2)
+  | Fst Exp
+  | Snd Exp 
   | StringLit String      -- "foo"
   | IntLit Integer        -- 3 
   | BoolLit Bool          -- True
@@ -30,6 +33,7 @@ data Exp =
 data Val =
     Closure String Exp Env
   | StringVal String
+  | PairVal Val Val  
   | IntVal Integer
   | BoolVal Bool 
   | UnitVal
