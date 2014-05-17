@@ -16,15 +16,15 @@ import Syntax
 TO DO:
 1) Add Booleans to the language *CHECK*
 2) implement the if then else expression *CHECK*
-3) Implement letrec *Check*
+3) Implement letrec *CHECK*
 4) Add continuation support to the language (call/cc)
 5) Integrate type checking / inference *CHECK*
 6) pretty printer
 6) Add universal function definitions
 7) Modules ??????
 8) write parser lexer to get rid of s-expressions
-9) Add Pairs, fst, snd 
-10) Polymorphism
+9) Add Pairs, fst, snd  *CHECK*
+10) Polymorphism *CHECK*
 11) Add parrallel "||" operator
 ----------}
 
@@ -108,80 +108,82 @@ evalBool op v1 v2 = mwThrow("Exception: Cannot perform equality expression: ("++
 -- the MaybeWriter monad.  The monoid which the monad manipulates is a String,
 -- which is the output that accumulates during evaluation.
 evalM :: Exp -> Env -> MaybeWriter String Val                      
-evalM  UnitLit env = return  UnitVal
-evalM (IntLit n) env = return (IntVal n)
+evalM  UnitLit       env = return  UnitVal
+evalM (IntLit n)     env = return (IntVal n)
 evalM (StringLit s)  env = return (StringVal s) 
-evalM (BoolLit b) env = return (BoolVal b)
-evalM (Var x) env  = let v = Map.lookup x env in 
-                      case v of 
-                        Nothing -> mwThrow ("Exception: Unbound Variable: (" ++
+evalM (BoolLit b)    env = return (BoolVal b)
+evalM (Var x)        env = let v = Map.lookup x env in 
+                             case v of 
+                               Nothing -> mwThrow ("Exception: Unbound Variable: (" ++
                                                                    show x ++ ")") 
-                        Just s -> return s 
+                               Just s -> return s 
 
 evalM (Concat e1 e2) env = do 
                             x <- coerceString =<< evalM e1 env
                             y <- coerceString =<< evalM e2 env
                             return (StringVal (mappend x  y)) 
-evalM (Output e) env = do
-                        v <- evalM e env  -- CREATE SHOWABLE TYPE
-                        case v of 
-                          StringVal s -> mwOutput s >>= (\y -> return UnitVal) 
-                          IntVal i -> mwOutput (show i) >>= (\y -> return UnitVal) 
-                          BoolVal b -> mwOutput (show b) >>= (\y -> return UnitVal) 
-                          otherwise -> mwThrow ("Exception: Output Value: " ++  
+evalM (Output e)     env = do
+                            v <- evalM e env  -- CREATE SHOWABLE TYPE
+                            case v of 
+                              StringVal s -> mwOutput s >>= (\y -> return UnitVal) 
+                              IntVal i -> mwOutput (show i) >>= (\y -> return UnitVal) 
+                              BoolVal b -> mwOutput (show b) >>= (\y -> return UnitVal) 
+                              otherwise -> mwThrow ("Exception: Output Value: " ++  
                                                       show e ++ " cannot be outputed")
-evalM (Eq e1 e2) env = do 
-                        b1 <- evalM e1 env -- CREATE COMPARABLE TYPE
-                        b2 <- evalM e2 env 
-                        evalBool (==) b1 b2 
+
+evalM (Eq e1 e2)    env = do 
+                           b1 <- evalM e1 env -- CREATE COMPARABLE TYPE
+                           b2 <- evalM e2 env 
+                           evalBool (==) b1 b2 
+
+evalM (Plus e1 e2)  env = do 
+                           x <- coerceInt =<< evalM e1 env
+                           y <- coerceInt =<< evalM e2 env 
+                           return (IntVal ((+) x y)) 
+
+evalM (Minus e1 e2) env = do 
+                           x <- coerceInt =<< evalM e1 env
+                           y <- coerceInt =<< evalM e2 env 
+                           return (IntVal ((-) x y)) 
+-- inegral division
+evalM (Div e1 e2)   env = do 
+                           x <- coerceInt =<< evalM e1 env
+                           y <- coerceInt =<< evalM e2 env 
+                           return (IntVal ((quot) x y))  
+evalM (Mult e1 e2)  env = do 
+                           x <- coerceInt =<< evalM e1 env
+                           y <- coerceInt =<< evalM e2 env 
+                           return (IntVal ((*) x y))                                                                                
+evalM (App e1 e2)   env = do 
+                           (x, e, env1) <- coerceClosure =<< evalM e1 env
+                           res2 <- evalM e2 env
+                           evalM e (Map.insert x res2 env1) -- env1 will contain all values from env plus those created in the evaluation of e1
+
+evalM (Lambda x e)  env = return (Closure x e env)
+
+evalM (Pair e1 e2 ) env = do 
+                           v1 <- evalM e1 env
+                           v2 <- evalM e2 env 
+                           return (PairVal v1 v2)
+
+evalM (Fst e)       env = do 
+                           (PairVal v1 v2) <- coercePair =<< evalM e env
+                           return(v1)
+
+evalM (Snd e)       env = do 
+                           (PairVal v1 v2) <- coercePair =<< evalM e env
+                           return(v2)
+
+evalM (Let f e1 e2) env = do 
+                           res1 <- evalM e1 env
+                           evalM e2 (Map.insert f res1 env)
+
 
 evalM (If condExp thenExp elseExp) env = do 
                                           b <- coerceBool =<< evalM condExp env
                                           case b of 
                                              True  -> evalM thenExp env
-                                             False -> evalM elseExp env
-                        
-evalM (Plus e1 e2) env = do 
-                          x <- coerceInt =<< evalM e1 env
-                          y <- coerceInt =<< evalM e2 env 
-                          return (IntVal ((+) x y)) 
-
-evalM (Minus e1 e2) env = do 
-                          x <- coerceInt =<< evalM e1 env
-                          y <- coerceInt =<< evalM e2 env 
-                          return (IntVal ((-) x y)) 
--- inegral division
-evalM (Div e1 e2) env = do 
-                          x <- coerceInt =<< evalM e1 env
-                          y <- coerceInt =<< evalM e2 env 
-                          return (IntVal ((quot) x y))  
-evalM (Mult e1 e2) env = do 
-                          x <- coerceInt =<< evalM e1 env
-                          y <- coerceInt =<< evalM e2 env 
-                          return (IntVal ((*) x y))                                                                                
-evalM (App e1 e2) env = do 
-                         (x, e, env1) <- coerceClosure =<< evalM e1 env
-                         res2 <- evalM e2 env
-                         evalM e (Map.insert x res2 env1) -- env1 will contain all values from env plus those created in the evaluation of e1
-
-evalM (Lambda x e) env = return (Closure x e env)
-
-evalM (Pair e1 e2 ) env = do 
-                            v1 <- evalM e1 env
-                            v2 <- evalM e2 env 
-                            return (PairVal v1 v2)
-
-evalM (Fst e) env = do 
-                      (PairVal v1 v2) <- coercePair =<< evalM e env
-                      return(v1)
-
-evalM (Snd e) env = do 
-                      (PairVal v1 v2) <- coercePair =<< evalM e env
-                      return(v2)
-                      
-evalM (Let f e1 e2) env = do 
-                           res1 <- evalM e1 env
-                           evalM e2 (Map.insert f res1 env)
+                                             False -> evalM elseExp env 
 
 -- SHOULD WE COERCE EVALM E1 TO BE A CLOSURE?
 evalM (LetRec f e1 e2) env = do 
