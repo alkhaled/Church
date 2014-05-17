@@ -123,7 +123,7 @@ evalM (Concat e1 e2) env = do
                             y <- coerceString =<< evalM e2 env
                             return (StringVal (mappend x  y)) 
 evalM (Output e)     env = do
-                            v <- evalM e env  -- CREATE SHOWABLE TYPE
+                            v <- evalM e env 
                             case v of 
                               StringVal s -> mwOutput s >>= (\y -> return UnitVal) 
                               IntVal i -> mwOutput (show i) >>= (\y -> return UnitVal) 
@@ -132,7 +132,7 @@ evalM (Output e)     env = do
                                                       show e ++ " cannot be outputed")
 
 evalM (Eq e1 e2)    env = do 
-                           b1 <- evalM e1 env -- CREATE COMPARABLE TYPE
+                           b1 <- evalM e1 env 
                            b2 <- evalM e2 env 
                            evalBool (==) b1 b2 
 
