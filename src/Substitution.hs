@@ -71,3 +71,5 @@ freeVarsPcontext :: Context -> VarSet
 freeVarsPcontext pContext=
     Map.fold (\ (Scheme t vs) freeVarSet -> Set.union (freeTypeVars t) freeVarSet) Set.empty pContext 
 
+   
+

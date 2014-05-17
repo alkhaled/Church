@@ -68,7 +68,6 @@ instance (Monoid w) => Monad (MaybeWriter w) where
 -- It allows us to do value recursion on the environment we recieve
 -- from the nound expression so that the resulting closure
 -- can reference itself in its own environment
--- IS THERE A CLEANER WAY TO DO THIS ????????
 instance (Monoid w) => MonadFix (MaybeWriter w) where
     mfix f = let a = f (getVal a) in a
              where getVal (Writer (x,w)) = x
@@ -94,12 +93,9 @@ coerceBool :: Val -> MaybeWriter String Bool
 coerceBool (BoolVal b) = mwReturn b
 coerceBool v = mwThrow ("Expected Bool but recieved: " ++ show v)
 
---evalBool :: (Integer -> Integer -> Bool) -> Val -> Val -> MaybeWriter String Val
 evalBool op  x  y = mwReturn (BoolVal (op x y)) 
 evalBool op v1 v2 = mwThrow("Exception: Cannot perform equality expression: ("++ 
                                      ") on values: (" ++ show v1 ++") (" ++ show v2 ++" )") 
-
-
 -- ### END helpers ###
 
 -- ### BEGIN Evaluator ###
@@ -194,13 +190,5 @@ eval e = case (evalM e Map.empty) of
                Fail -> Nothing
                Exc s -> Just (UnitVal ,"Uncaught Exception: " ++ s) 
                Writer(v,out) -> Just (v,out)
-
-evalWithExc :: Exp -> Env -> Maybe (Val, String)
-evalWithExc e env = case (evalM e env) of 
-               Fail -> Nothing
-               Exc s -> Just( UnitVal ,"Uncaught Exception: " ++ s) 
-               Writer(v,out) -> Just (v,out)
-
-
 
 -- ### END Evaluator ###

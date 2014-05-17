@@ -14,8 +14,6 @@ import Tests
 import Substitution
 
 -- Mapping from TypeVariables to Types
-
-
 type TcMonad a = 
       WriterT [Constraint]   -- gathers constraints        
       (StateT  TypeVar       -- generates next FreshVar
@@ -49,7 +47,6 @@ unify ((Equal t1 t2): xs) = if (t1 == t2)
                                     Equal (TArrow t1 t2) (TArrow t1' t2') -> (unify ((Equal t1 t1') : (Equal t2 t2') : xs))
                                     otherwise -> throwError ("Unification failed for: " ++ show t1 ++ " = " ++show t2)
 
-
 -- Assigns var x to t and replaces occurences of x with t in constraints 
 replace :: Var -> Type -> [Constraint] -> Either String Subst
 replace x t constraints = if not (Set.member x (freeTypeVars t)) 
@@ -57,7 +54,6 @@ replace x t constraints = if not (Set.member x (freeTypeVars t))
                                    sub <- unify (substConstr (TVar x) t constraints) 
                                    return (Map.insert x t sub)
                             else throwError ("Circular Type: " ++ show x ++ " = " ++ show t)
-
 
 -- [quantify g t] takes a context [g] and a type [t] and finds all type variables in [t] that are also not used in [g] and forms a type scheme from these type variables and [t] 
 quantify :: TcMonad Type -> Context -> TcMonad (TypeScheme, Context)
@@ -71,16 +67,16 @@ quantify typ context =  do
                                      let freeVars = (Set.difference  (freeTypeVars t') (freeVarsPcontext context'))
                                      return ((Scheme t' freeVars) , context')
 
- 
-
-
+--[instantiate t] takes a type scheme (t s) and returns and substitutes fresh vars for all TypVars in  s
 instantiate :: TypeScheme -> TcMonad Type
 instantiate (Scheme typ varSet) = do
                                     s <- foldM substFreshVar Map.empty (Set.toList varSet)
-                                    return (applySubst s typ )                              
+                                    return (applySubst s typ) 
+
+-- helper function that generates freshvars for instantiate 
 substFreshVar sub var = do 
                       newFresh <- freshVar                                                                      
-                      return (Map.insert var (TVar newFresh) sub)
+                      return (Map.insert var (TVar newFresh) sub)                             
                       
 -- [check e env] typechecks e in the context env and generates a type and a set of constraints
 check :: Exp -> Context -> TcMonad Type 
@@ -107,7 +103,6 @@ check (Lambda x e) context  = do
                                 t2 <- check e (Map.insert x (newScheme t1) context)
                                 return(TArrow (TVar t1) t2)  
 
-
 check (Let f e1 e2) context = do
                                 (t1, context') <- quantify (check e1 context) context  
                                 t2 <- check e2 (Map.insert f t1 context')
@@ -128,7 +123,6 @@ check (If cond thenBranch elseBranch) context = do
                                                     tell [Equal tCond TBool] 
                                                     tell [Equal tThen tElse]
                                                     return tElse
-
 
 --- Check Helper Functions ----------------------------
 freshVar :: TcMonad TypeVar
