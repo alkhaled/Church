@@ -129,8 +129,9 @@ check (Let f e1 e2) context = do
 check (LetRec f (Lambda x e1) e2)  context = do
                                               tvar_x <- freshVar
                                               tvar_resf <- freshVar
-                                              t1 <- check e1  (Map.insert f (emptyScheme(TArrow (TVar tvar_x) (TVar tvar_resf))) (Map.insert x (newScheme tvar_x) context))  
-                                              t2 <- check e2 (Map.insert f  (emptyScheme(TArrow (TVar tvar_x) (TVar tvar_resf))) context)
+                                              let fType = (emptyScheme (TArrow (TVar tvar_x) (TVar tvar_resf)))
+                                              t1 <- check e1 (Map.insert f fType (Map.insert x (newScheme tvar_x) context))  
+                                              t2 <- check e2 (Map.insert f  fType context)
                                               tell [Equal t1 (TVar tvar_resf)]
                                               return t2                                  
 
