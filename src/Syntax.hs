@@ -42,7 +42,8 @@ data Val =
 
 -- Types
 data Type = 
-    TInt                   -- int 
+    TUnit                  -- Unit Val
+  | TInt                   -- int 
   | TBool                  -- bool 
   | TString                -- String
   | TVar  Var              -- X 
