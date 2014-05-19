@@ -123,6 +123,18 @@ check (Let f e1 e2) context = do
                                (t1, context') <- quantify (check e1 context) context  
                                t2 <- check e2 (Map.insert f t1 context')
                                return t2
+                               
+check (Output e)    context = do 
+                               t <- check e context
+                               return TUnit
+                               
+check (Concat e1 e2) context = do
+                                t1 <- check e1 context
+                                t2 <- check e2 context
+                                tell[Equal t1 TString]
+                                tell[Equal t2 TString]
+                                return TString
+                                
 -- TODO : CLean this up                                                    
 check (LetRec f (Lambda x e1) e2)     context = do
                                                  tvar_x <- freshVar
