@@ -20,7 +20,6 @@ type TcMonad a =
       (Either  String))      -- error messages for Free Variables
       a
 
-
 -- [typeCheck e] is the main function that typechecks the expression e and returns its type
 -- or an error if it does not typecheck
 typeCheck :: Exp -> Either String Type  
@@ -34,7 +33,6 @@ getConstraints = writerState . (\x -> check x Map.empty)
 
 -- initial state of the State monad
 writerState m = evalStateT (runWriterT m) "a"
-
 
 --[unify c] solves the set of constraints c if possible, and returns the most general substitution
 unify :: [Constraint] -> Either String Subst 
@@ -61,11 +59,11 @@ quantify typ context =  do
                   (t, cons) <- listen typ
                   case (unify cons) of
                     Left err -> throwError err
-                    Right subst  -> do
-                                     let t' = (applySubst subst t) 
-                                     let context' = (substContext subst context)
-                                     let freeVars = (Set.difference  (freeTypeVars t') (freeVarsPcontext context'))
-                                     return ((Scheme t' freeVars) , context')
+                    Right subst -> do
+                                    let t' = (applySubst subst t) 
+                                    let context' = (substContext subst context)
+                                    let freeVars = (Set.difference  (freeTypeVars t') (freeVarsPcontext context'))
+                                    return ((Scheme t' freeVars) , context')
 
 --[instantiate t] takes a type scheme (t s) and returns and substitutes fresh vars for all TypVars in  s
 instantiate :: TypeScheme -> TcMonad Type
@@ -89,7 +87,7 @@ check (Plus n1 n2)  context = arithCheck n1 n2 context
 check (Minus n1 n2) context = arithCheck n1 n2 context
 check (Mult n1 n2)  context = arithCheck n1 n2 context
 check (Div n1 n2)   context = arithCheck n1 n2 context
-check (Eq n1 n2)    context = bExpCheck n1 n2 context
+check (Eq n1 n2)    context = bExpCheck  n1 n2 context
 
 check (Pair e1 e2)  context = do
                                t1 <- check e1 context
@@ -126,14 +124,14 @@ check (Let f e1 e2) context = do
                                t2 <- check e2 (Map.insert f t1 context')
                                return t2
 -- TODO : CLean this up                                                    
-check (LetRec f (Lambda x e1) e2)  context = do
-                                              tvar_x <- freshVar
-                                              tvar_resf <- freshVar
-                                              let fType = (emptyScheme (TArrow (TVar tvar_x) (TVar tvar_resf)))
-                                              t1 <- check e1 (Map.insert f fType (Map.insert x (newScheme tvar_x) context))  
-                                              t2 <- check e2 (Map.insert f  fType context)
-                                              tell [Equal t1 (TVar tvar_resf)]
-                                              return t2                                  
+check (LetRec f (Lambda x e1) e2)     context = do
+                                                 tvar_x <- freshVar
+                                                 tvar_resf <- freshVar
+                                                 let fType = (emptyScheme (TArrow (TVar tvar_x) (TVar tvar_resf)))
+                                                 t1 <- check e1 (Map.insert f fType (Map.insert x (newScheme tvar_x) context))  
+                                                 t2 <- check e2 (Map.insert f  fType context)
+                                                 tell [Equal t1 (TVar tvar_resf)]
+                                                 return t2                                  
 
 check (If cond thenBranch elseBranch) context = do
                                                  tCond <- check cond context
