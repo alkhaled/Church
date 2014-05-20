@@ -7,7 +7,6 @@ import Parser
 import Syntax  
 
 -- finishes with the value `unit` and the string "oh hai"
-
 e1 = parse [sexp|
 ((lambda (z)
   (output " hai"))
@@ -22,7 +21,7 @@ e2 = parse [sexp|
  (output ((((lambda (x) x) 
             fconcat) 
            "oh") 
-          " hai")))
+          "hai")))
  (lambda (x) 
   (lambda (y) 
    ((lambda (z) 
@@ -175,6 +174,7 @@ e325 = parse [sexp|
    (b 12)))) (lambda (x) x))
 |]
 
+-- Let polymorphism test, should type to Bool.
 e35 = parse [sexp|
 (let a "=" (lambda (x) x) in 
 (let b "=" (a 1) in 

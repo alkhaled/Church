@@ -42,6 +42,7 @@ substContext sub pContext = let subst_mapping v (Scheme t varSet) cons = Map.ins
 -- Substitutes var with replacement in t
 substitute :: Type -> Type -> Type -> Type 
 substitute var replacement t =  case t of 
+                                      TUnit -> t
                                       TInt -> t  
                                       TBool -> t
                                       TString -> t
@@ -51,6 +52,7 @@ substitute var replacement t =  case t of
 -- Applies substitution sub to type t
 applySubst :: Subst -> Type -> Type
 applySubst sub t = case t of 
+                      TUnit -> t 
                       TInt -> t  
                       TBool -> t
                       TString -> t
@@ -62,14 +64,13 @@ applySubst sub t = case t of
 -- Returns all free type variables in t
 freeTypeVars :: Type -> Set.Set TypeVar
 freeTypeVars t = case t of 
+                  TUnit -> Set.empty
                   TInt -> Set.empty
                   TBool -> Set.empty
+                  TString -> Set.empty
                   TVar x -> Set.singleton x 
                   TArrow t1 t2 -> Set.union (freeTypeVars t1) (freeTypeVars t2)
 
 freeVarsPcontext :: Context -> VarSet
 freeVarsPcontext pContext=
     Map.fold (\ (Scheme t vs) freeVarSet -> Set.union (freeTypeVars t) freeVarSet) Set.empty pContext 
-
-   
-

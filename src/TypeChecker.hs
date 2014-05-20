@@ -78,6 +78,7 @@ substFreshVar sub var = do
                       
 -- [check e env] typechecks e in the context env and generates a type and a set of constraints
 check :: Exp -> Context -> TcMonad Type 
+check  UnitLit _      = return TUnit
 check (IntLit x) _    = return TInt
 check (BoolLit b) _   = return TBool 
 check (StringLit s) _ = return TString
@@ -141,7 +142,7 @@ check (LetRec f (Lambda x e1) e2)     context = do
                                                  tvar_resf <- freshVar
                                                  let fType = (emptyScheme (TArrow (TVar tvar_x) (TVar tvar_resf)))
                                                  t1 <- check e1 (Map.insert f fType (Map.insert x (newScheme tvar_x) context))  
-                                                 t2 <- check e2 (Map.insert f  fType context)
+                                                 t2 <- check e2 (Map.insert f fType context)
                                                  tell [Equal t1 (TVar tvar_resf)]
                                                  return t2                                  
 
@@ -151,7 +152,7 @@ check (If cond thenBranch elseBranch) context = do
                                                  tElse <- check elseBranch context
                                                  tell [Equal tCond TBool] 
                                                  tell [Equal tThen tElse]
-                                                 return tElse
+                                                 return tElse                                                
 
 --- Check Helper Functions ----------------------------
 freshVar :: TcMonad TypeVar
