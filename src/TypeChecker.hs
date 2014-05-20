@@ -135,7 +135,21 @@ check (Concat e1 e2) context = do
                                 tell[Equal t1 TString]
                                 tell[Equal t2 TString]
                                 return TString
+
+-- Throwing halts the computation and jumps to the closest enclosing
+-- try, or returns the error if there is none.
+-- Because of this a throw can be placed anywhere 
+check (Throw e) context = do 
+                           x <- freshVar
+                           t <- check e context
+                           tell[Equal t TString]
+                           return (TVar x)
                                 
+check (Try e exc onFail) context = do 
+                                   te <- check e context
+                                   tFail <- check onFail context 
+                                   tell[Equal te tFail]
+                                   return te
 -- TODO : CLean this up                                                    
 check (LetRec f (Lambda x e1) e2)     context = do
                                                  tvar_x <- freshVar
