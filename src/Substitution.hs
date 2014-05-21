@@ -47,6 +47,7 @@ substitute var replacement t =  case t of
                                       TBool -> t
                                       TString -> t
                                       TVar x ->  if t == var then replacement else t
+                                      TPair x y -> TPair (substitute var replacement x) (substitute var replacement y)  
                                       TArrow x y -> TArrow (substitute var replacement x) (substitute var replacement y)  
 
 -- Applies substitution sub to type t
@@ -59,6 +60,7 @@ applySubst sub t = case t of
                       TVar x ->  case Map.lookup x sub of 
                                         Nothing -> t
                                         Just t1 -> applySubst sub t1
+                      TPair x y -> TPair (applySubst sub x) (applySubst sub y)                                          
                       TArrow x y -> TArrow (applySubst sub x) (applySubst sub y)  
 
 -- Returns all free type variables in t
@@ -68,7 +70,8 @@ freeTypeVars t = case t of
                   TInt -> Set.empty
                   TBool -> Set.empty
                   TString -> Set.empty
-                  TVar x -> Set.singleton x 
+                  TVar x -> Set.singleton x
+                  TPair t1 t2 -> Set.union (freeTypeVars t1) (freeTypeVars t2)
                   TArrow t1 t2 -> Set.union (freeTypeVars t1) (freeTypeVars t2)
 
 freeVarsPcontext :: Context -> VarSet

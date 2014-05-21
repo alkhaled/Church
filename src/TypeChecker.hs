@@ -10,7 +10,7 @@ import Control.Monad.Error
 import Control.Monad.Reader
 
 import Syntax 
-import Tests
+import qualified Tests as Test 
 import Substitution
 
 -- Mapping from TypeVariables to Types
@@ -43,6 +43,7 @@ unify ((Equal t1 t2): xs) = if (t1 == t2)
                                     Equal (TVar x) t2 -> replace x t2 xs
                                     Equal t1 (TVar x) -> replace x t1 xs 
                                     Equal (TArrow t1 t2) (TArrow t1' t2') -> (unify ((Equal t1 t1') : (Equal t2 t2') : xs))
+                                    Equal (TPair t1 t2) (TPair t1' t2') -> (unify ((Equal t1 t1') : (Equal t2 t2') : xs))
                                     otherwise -> throwError ("Unification failed for: " ++ show t1 ++ " = " ++show t2)
 
 -- Assigns var x to t and replaces occurences of x with t in constraints 
@@ -97,14 +98,14 @@ check (Pair e1 e2)  context = do
 check (Fst e)       context = do
                                x <- freshVar
                                y <- freshVar
-                               t <- check e1 context
+                               t <- check e context
                                tell [Equal t (TPair (TVar x) (TVar y))]
                                return (TVar x)
 
 check (Snd e)       context = do
                                x <- freshVar
                                y <- freshVar
-                               t <- check e1 context
+                               t <- check e context
                                tell [Equal t (TPair (TVar x) (TVar y))]
                                return (TVar y)
 
