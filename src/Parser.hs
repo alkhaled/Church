@@ -47,7 +47,15 @@ parse s@[sexp| (eq . @:_) =|] = error $ "bad 'eq' expression: " ++ show s
 parse   [sexp| (output @:e) |] = Output (parse e)
 parse s@[sexp| (output . @:_) |] = error $ "bad 'output' expression: " ++ show s
 
+parse   [sexp| (fst @:e) |] = Fst (parse e)
+parse s@[sexp| (fst . @:_) =|] = error $ "bad 'fst' expression: " ++ show s
+
+parse   [sexp| (snd @:e) |] = Snd (parse e) 
+parse s@[sexp| (snd . @:_) =|] = error $ "bad 'snd' expression: " ++ show s
+
 parse   [sexp| (@:e1 @:e2) |] = App (parse e1) (parse e2)
+
+parse   [sexp| (@:e1 "," @:e2) |] = Pair (parse e1) (parse e2)
 
 parse   [sexp| (let @sym:x "="  @:e1  in @:e2)|] = Let x (parse e1) (parse e2)
 parse   [sexp| (letrec @sym:x "="  @:e1  in @:e2)|] = LetRec x (parse e1) (parse e2)
