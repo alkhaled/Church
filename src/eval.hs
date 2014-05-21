@@ -32,6 +32,10 @@ TO DO:
 
 data MaybeWriter w a = Exc String | Fail | Writer (a,w)
   deriving Show
+  
+instance (Monoid w) => Monad (MaybeWriter w) where
+  return = mwReturn
+  (>>=) = mwBind
 
 mwReturn :: (Monoid w) => a -> MaybeWriter w a
 mwReturn a = Writer (a, mempty) 
@@ -40,9 +44,9 @@ mwBind :: (Monoid w) => MaybeWriter w a -> (a -> MaybeWriter w b) -> MaybeWriter
 mwBind Fail _ = mwFailure 
 mwBind (Exc s) _ = mwThrow s 
 mwBind (Writer (x, w1)) f =  case f x of 
-                                (Writer (y, w2)) -> Writer (y, mappend w1 w2)
-                                Fail -> mwFailure
-                                Exc s -> mwThrow s 
+                               (Writer (y, w2)) -> Writer (y, mappend w1 w2)
+                               Fail -> mwFailure
+                               Exc s -> mwThrow s 
 
 mwFailure :: (Monoid w) => MaybeWriter w a
 mwFailure = Fail
@@ -50,7 +54,6 @@ mwFailure = Fail
 mwOutput :: (Monoid w) => w -> MaybeWriter w ()
 mwOutput w = Writer ((), w)
 
--------------Try/Catch----------------------------
 mwThrow :: (Monoid w) => String -> MaybeWriter w a 
 mwThrow s =  Exc s
 
@@ -58,11 +61,6 @@ mwTry :: (Monoid w) => MaybeWriter w a -> (String -> MaybeWriter w a) -> MaybeWr
 mwTry mA f = case mA of 
                 Exc s -> f s
                 otherwise -> mA -- No error to be caught, return result or fail 
------------------------------------------------------
-
-instance (Monoid w) => Monad (MaybeWriter w) where
-  return = mwReturn
-  (>>=) = mwBind
 
 -- MonadFix instance allows us to define letrec in monadic style
 -- It allows us to do value recursion on the environment we recieve
@@ -113,92 +111,77 @@ evalM (IntLit n)     env = return (IntVal n)
 evalM (StringLit s)  env = return (StringVal s) 
 evalM (BoolLit b)    env = return (BoolVal b)
 evalM (Var x)        env = let v = Map.lookup x env in 
-                             case v of 
-                               Nothing -> mwThrow ("Exception: Unbound Variable: (" ++
-                                                                   show x ++ ")") 
-                               Just s -> return s 
+                           case v of 
+                             Nothing -> mwThrow ("Exception: Unbound Variable: (" ++
+                                                                       show x ++ ")") 
+                             Just s -> return s 
 
-evalM (Concat e1 e2) env = do 
-                            x <- coerceString =<< evalM e1 env
-                            y <- coerceString =<< evalM e2 env
-                            return (StringVal (mappend x  y)) 
-evalM (Output e)     env = do
-                            v <- evalM e env 
-                            case v of 
-                              StringVal s -> mwOutput s >>= (\y -> return UnitVal) 
-                              IntVal i -> mwOutput (show i) >>= (\y -> return UnitVal) 
-                              BoolVal b -> mwOutput (show b) >>= (\y -> return UnitVal) 
-                              otherwise -> mwThrow ("Exception: Output Value: " ++  
+evalM (Concat e1 e2) env = do x <- coerceString =<< evalM e1 env
+                              y <- coerceString =<< evalM e2 env
+                              return (StringVal (mappend x  y)) 
+                              
+evalM (Output e)     env = do v <- evalM e env 
+                              case v of 
+                                StringVal s -> mwOutput s >>= (\y -> return UnitVal) 
+                                IntVal i -> mwOutput (show i) >>= (\y -> return UnitVal) 
+                                BoolVal b -> mwOutput (show b) >>= (\y -> return UnitVal) 
+                                otherwise -> mwThrow ("Exception: Output Value: " ++  
                                                       show e ++ " cannot be outputed")
 
-evalM (Eq e1 e2)    env = do 
-                           b1 <- evalM e1 env 
-                           b2 <- evalM e2 env 
-                           evalBool (==) b1 b2 
+evalM (Eq e1 e2)    env = do b1 <- evalM e1 env 
+                             b2 <- evalM e2 env 
+                             evalBool (==) b1 b2 
 
-evalM (Plus e1 e2)  env = do 
-                           x <- coerceInt =<< evalM e1 env
-                           y <- coerceInt =<< evalM e2 env 
-                           return (IntVal ((+) x y)) 
+evalM (Plus e1 e2)  env = do x <- coerceInt =<< evalM e1 env
+                             y <- coerceInt =<< evalM e2 env 
+                             return (IntVal ((+) x y)) 
 
-evalM (Minus e1 e2) env = do 
-                           x <- coerceInt =<< evalM e1 env
-                           y <- coerceInt =<< evalM e2 env 
-                           return (IntVal ((-) x y)) 
+evalM (Minus e1 e2) env = do x <- coerceInt =<< evalM e1 env
+                             y <- coerceInt =<< evalM e2 env 
+                             return (IntVal ((-) x y)) 
 -- inegral division
-evalM (Div e1 e2)   env = do 
-                           x <- coerceInt =<< evalM e1 env
-                           y <- coerceInt =<< evalM e2 env 
-                           return (IntVal ((quot) x y))  
-evalM (Mult e1 e2)  env = do 
-                           x <- coerceInt =<< evalM e1 env
-                           y <- coerceInt =<< evalM e2 env 
-                           return (IntVal ((*) x y))                                                                                
-evalM (App e1 e2)   env = do 
-                           (x, e, env1) <- coerceClosure =<< evalM e1 env
-                           res2 <- evalM e2 env
-                           evalM e (Map.insert x res2 env1) -- env1 will contain all values from env plus those created in the evaluation of e1
+evalM (Div e1 e2)   env = do x <- coerceInt =<< evalM e1 env
+                             y <- coerceInt =<< evalM e2 env 
+                             return (IntVal ((quot) x y))
+                             
+evalM (Mult e1 e2)  env = do x <- coerceInt =<< evalM e1 env
+                             y <- coerceInt =<< evalM e2 env 
+                             return (IntVal ((*) x y))                                                                            
+                             
+evalM (App e1 e2)   env = do (x, e, env1) <- coerceClosure =<< evalM e1 env
+                             res2 <- evalM e2 env
+                             evalM e (Map.insert x res2 env1) -- env1 will contain all values from env plus those created in the evaluation of e1
 
 evalM (Lambda x e)  env = return (Closure x e env)
 
-evalM (Pair e1 e2 ) env = do 
-                           v1 <- evalM e1 env
-                           v2 <- evalM e2 env 
-                           return (PairVal v1 v2)
+evalM (Pair e1 e2 ) env = do v1 <- evalM e1 env
+                             v2 <- evalM e2 env 
+                             return (PairVal v1 v2)
 
-evalM (Fst e)       env = do 
-                           (PairVal v1 v2) <- coercePair =<< evalM e env
-                           return(v1)
+evalM (Fst e)       env = do (PairVal v1 v2) <- coercePair =<< evalM e env
+                             return(v1)
 
-evalM (Snd e)       env = do 
-                           (PairVal v1 v2) <- coercePair =<< evalM e env
-                           return(v2)
+evalM (Snd e)       env = do (PairVal v1 v2) <- coercePair =<< evalM e env
+                             return(v2)
 
-evalM (Let f e1 e2) env = do 
-                           res1 <- evalM e1 env
-                           evalM e2 (Map.insert f res1 env)
+evalM (Let f e1 e2) env = do res1 <- evalM e1 env
+                             evalM e2 (Map.insert f res1 env)
 
 
-evalM (If condExp thenExp elseExp) env = do 
-                                          b <- coerceBool =<< evalM condExp env
-                                          case b of 
-                                             True  -> evalM thenExp env
-                                             False -> evalM elseExp env 
-
+evalM (If condExp thenExp elseExp) env = do b <- coerceBool =<< evalM condExp env
+                                            case b of 
+                                              True  -> evalM thenExp env
+                                              False -> evalM elseExp env 
+                                              
 -- SHOULD WE COERCE EVALM E1 TO BE A CLOSURE?
-evalM (LetRec f e1 e2) env = do 
-                              rec v <- evalM e1 (Map.insert f v env)
-                              evalM e2 (Map.insert f v env)
+evalM (LetRec f e1 e2) env = do rec v <- evalM e1 (Map.insert f v env)
+                                evalM e2 (Map.insert f v env)
 
- ---------Try/Catch-----------------------------------
 evalM (Try e s onFail) env = let aM = evalM e env in
                               mwTry aM (\err -> evalM onFail (Map.insert s (StringVal err) env)) 
 
-evalM (Throw e) env = do
-                        s <- coerceString =<< evalM e env
-                        mwThrow s
--------------------------------------------------------
-
+evalM (Throw e) env = do s <- coerceString =<< evalM e env
+                         mwThrow s
        
 -- (eval e env) evaluates 'e' in the environment 'env' to a final pure result.
 --
