@@ -180,3 +180,12 @@ e35 = parse [sexp|
 (let b "=" (a 1) in 
   (a false)))
 |]
+
+e36 = parse [sexp|
+(3 "," true)
+|]
+
+
+e37 = parse [sexp|
+(snd (3 "," true))
+|]
