@@ -20,8 +20,7 @@ TO DO:
 4) Add continuation support to the language (call/cc)
 5) Integrate type checking / inference *CHECK*
 6) pretty printer
-6) Add universal function definitions
-7) Modules ??????
+7) Modules
 8) write parser lexer to get rid of s-expressions
 9) Add Pairs, fst, snd  *CHECK*
 10) Polymorphism *CHECK*
