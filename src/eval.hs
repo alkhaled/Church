@@ -12,20 +12,6 @@ import Control.Monad.Fix
 
 import Syntax
 
-{-------- 
-TO DO:
-1) Add Booleans to the language *CHECK*
-2) implement the if then else expression *CHECK*
-3) Implement letrec *CHECK*
-4) Add continuation support to the language (call/cc)
-5) Integrate type checking / inference *CHECK*
-6) pretty printer
-7) Modules
-8) write parser lexer to get rid of s-expressions
-9) Add Pairs, fst, snd  *CHECK*
-10) Polymorphism *CHECK*
-11) Add parrallel "||" operator
-----------}
 
 -- ### BEGIN MaybeWriter Monad Definition ###
 
