@@ -7,14 +7,15 @@ While Church is strongly typed and uses type inference, any program can also be 
 ##Usage 
 Start ghci with quasiquotes and then load Church.
 
-''''
+```
 ghci -XQuasiQuotes
-:load Church'''
+:load Church
+```
 
 Then, to evaluate a program at the command line, run evalD or evalS on an s-expression. 
-'''
+```
 evalS [sexp| ((lambda (x) (add x x)) 2) |]
-'''
+```
 evalD dynamically evaluates the program without running the type checker, and throws an error whenever a type mismatch occurs.
 evalS runs the type checker first, and then evaluates the expression if it is well typed. Note: expressions don't need type annotations since we use type inference.
 
@@ -39,9 +40,9 @@ Lazyness is achieved for free because the language is interpreted in haskell.
 
 
 ## TO DO:
-1.Write a parser to get rid of s-expressions
-2.Implement a module system
-3.Add a pretty printer
-4.Add parallelism to the language.
-5.Add algebraic types.
-6.Add Native continuation function (call/cc)
+1. Write a parser to get rid of s-expressions
+2. Implement a module system
+3. Add a pretty printer
+4. Add parallelism to the language.
+5. Add algebraic types.
+6. Add Native continuation function (call/cc)
