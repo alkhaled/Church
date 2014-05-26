@@ -19,7 +19,7 @@ evalS [sexp| ((lambda (x) (add x x)) 2) |]
 evalD dynamically evaluates the program without running the type checker, and throws an error whenever a type mismatch occurs.
 evalS runs the type checker first, and then evaluates the expression if it is well typed. Note: expressions don't need type annotations since we use type inference.
 
-To enter a longer program or save one save it as an sexp in a file of its own, then load that file in with Church and run eval. To see an example of this look at test.hs to find saved test programs. The test programs are also a good introduction to the Chruch's syntax, since the test cases cover all language primitives.
+To enter a longer program or save one, enter it as an sexp in a file of its own, then load that file in with Church and run eval. To see an example of this look at test.hs to find saved test programs. The test programs are also a good introduction to the Chruch's syntax, since the test cases cover all language primitives.
 
 ##Features
 
@@ -38,6 +38,10 @@ Church implements parametric polyorphism. This allows functions to be written ge
 ### Laziness
 Lazyness is achieved for free because the language is interpreted in haskell.
 
+### Error handling
+Any thrown error will halt execution and execution will resume at the nearest enclosing try block's catch statement. If no enclosing try exists, program execution will halt and return the error. Code inside a try block will behave as if the try does not exist, and  code inside the catch will do the same (only the error string from the try will be preserved). Because of this the try and catch statements interact with the rest of the program as if the try/catch statement didn't exist and must have the same type unless the error is propogated.
+When running dynamically all type mismatches will throw errors that the user can catch and handle. 
+Since errors are named, catch statements can handle each error differently.
 
 ## TO DO:
 1. Write a parser to get rid of s-expressions
