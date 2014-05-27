@@ -1,7 +1,7 @@
 Church
 ======
 
-Church is a lazy, strongly typed, interpreted, polymorphic programming language based on the lambda calculus. A Church program evaluates to a value, but also provides a global output stream. Other than output effects, the language is purely functional (for now).
+Church is a lexically scoped, lazy, strongly typed, interpreted, polymorphic programming language based on the lambda calculus. A Church program evaluates to a value, but also provides a global output stream. Other than output effects, the language is purely functional (for now).
 While Church is strongly typed and uses type inference, any program can also be run dynamically. 
 
 ##Usage 
