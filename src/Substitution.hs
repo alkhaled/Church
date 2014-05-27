@@ -80,6 +80,6 @@ freeTypeVars t = case t of
                   TArrow t1 t2 -> Set.union (freeTypeVars t1) (freeTypeVars t2)
 
 -- [freeVarsPontext c] returns all free variables in context c
-freeVarsPcontext :: Context -> VarSet
-freeVarsPcontext pContext=
+freeVarsContext :: Context -> VarSet
+freeVarsContext pContext=
     Map.fold (\ (Scheme t vs) freeVarSet -> Set.union (freeTypeVars t) freeVarSet) Set.empty pContext 

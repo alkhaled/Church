@@ -21,7 +21,6 @@ type TcMonad a =
       a
 
 -- [typeCheck e] is the main function that typechecks the expression e and returns its type
--- or an error if it does not typecheck
 typeCheck :: Exp -> Either String Type  
 typeCheck e = do (t,cons) <- getConstraints e 
                  unified <- unify cons
@@ -45,7 +44,7 @@ unify ((Equal t1 t2): xs) = if (t1 == t2)
                                     Equal (TPair t1 t2) (TPair t1' t2') -> (unify ((Equal t1 t1') : (Equal t2 t2') : xs))
                                     otherwise -> throwError ("Unification failed for: " ++ show t1 ++ " = " ++show t2)
 
--- Assigns var x to t and replaces occurences of x with t in constraints 
+-- Unify helper, Assigns var x to t and replaces occurences of x with t in constraints 
 replace :: Var -> Type -> [Constraint] -> Either String Subst
 replace x t constraints = if not (Set.member x (freeTypeVars t)) 
                             then do sub <- unify (substConstr (TVar x) t constraints) 
@@ -60,7 +59,7 @@ quantify typ context =  do
                     Left err -> throwError err
                     Right subst -> do let t' = (applySubst subst t) 
                                       let context' = (substContext subst context)
-                                      let freeVars = (Set.difference  (freeTypeVars t') (freeVarsPcontext context'))
+                                      let freeVars = (Set.difference  (freeTypeVars t') (freeVarsContext context'))
                                       return ((Scheme t' freeVars) , context')
 
 --[instantiate t] takes a type scheme (t s) and returns and substitutes fresh vars for all TypVars in  s
@@ -68,7 +67,7 @@ instantiate :: TypeScheme -> TcMonad Type
 instantiate (Scheme typ varSet) = do s <- foldM substFreshVar Map.empty (Set.toList varSet)
                                      return (applySubst s typ) 
 
--- helper function that generates freshvars for instantiate 
+-- instantiate helper, generates freshvars for instantiate 
 substFreshVar sub var = do newFresh <- freshVar                                                                      
                            return (Map.insert var (TVar newFresh) sub)                             
                       
@@ -175,7 +174,8 @@ bExpCheck n1 n2 context = do t1 <- check n1 context
                              tell [Equal t1 TInt]
                              tell [Equal t2 TInt]
                              return TBool
-
+                             
+typeLookup :: Var -> Context -> TcMonad Type
 typeLookup x context = case (Map.lookup x context) of 
                         Nothing -> throwError ("Free Variable: " ++ show x)
                         Just a -> instantiate a                                 
