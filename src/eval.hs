@@ -123,16 +123,16 @@ evalM (Plus e1 e2)  env = do x <- coerceInt =<< evalM e1 env
 evalM (Minus e1 e2) env = do x <- coerceInt =<< evalM e1 env
                              y <- coerceInt =<< evalM e2 env 
                              return (IntVal ((-) x y)) 
+                             
+evalM (Mult e1 e2)  env = do x <- coerceInt =<< evalM e1 env
+                             y <- coerceInt =<< evalM e2 env 
+                             return (IntVal ((*) x y))                              
 -- inegral division
 evalM (Div e1 e2)   env = do x <- coerceInt =<< evalM e1 env
                              y <- coerceInt =<< evalM e2 env 
                              if (y == 0) 
                               then mwThrow "Error: Division by 0"
-                              else return (IntVal ((quot) x y))
-                             
-evalM (Mult e1 e2)  env = do x <- coerceInt =<< evalM e1 env
-                             y <- coerceInt =<< evalM e2 env 
-                             return (IntVal ((*) x y))                                                                            
+                              else return (IntVal ((quot) x y))                                                                           
                              
 evalM (App e1 e2)   env = do (x, e, env1) <- coerceClosure =<< evalM e1 env
                              res2 <- evalM e2 env
@@ -145,10 +145,10 @@ evalM (Pair e1 e2 ) env = do v1 <- evalM e1 env
                              return (PairVal v1 v2)
 
 evalM (Fst e)       env = do (PairVal v1 v2) <- coercePair =<< evalM e env
-                             return(v1)
+                             return v1
 
 evalM (Snd e)       env = do (PairVal v1 v2) <- coercePair =<< evalM e env
-                             return(v2)
+                             return v2 
 
 evalM (Let f e1 e2) env = do res1 <- evalM e1 env
                              evalM e2 (Map.insert f res1 env)
