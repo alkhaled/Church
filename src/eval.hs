@@ -126,7 +126,9 @@ evalM (Minus e1 e2) env = do x <- coerceInt =<< evalM e1 env
 -- inegral division
 evalM (Div e1 e2)   env = do x <- coerceInt =<< evalM e1 env
                              y <- coerceInt =<< evalM e2 env 
-                             return (IntVal ((quot) x y))
+                             if (y == 0) 
+                              then mwThrow "Error: Division by 0"
+                              else return (IntVal ((quot) x y))
                              
 evalM (Mult e1 e2)  env = do x <- coerceInt =<< evalM e1 env
                              y <- coerceInt =<< evalM e2 env 
