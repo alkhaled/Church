@@ -39,7 +39,7 @@ Church implements parametric polyorphism. This allows functions to be written ge
 Lazyness is achieved for free because the language is interpreted in haskell.
 
 ### Error handling
-Any thrown error will halt execution and execution will resume at the nearest enclosing try block's catch statement. If no enclosing try exists, program execution will halt and return the error. Code inside a try block will behave as if the try does not exist, and  code inside the catch will do the same (only the error string from the try will be preserved). Because of this the try and catch statements interact with the rest of the program as if the try/catch statement didn't exist and must have the same type unless the error is propogated.
+Any thrown error will halt execution and execution will resume at the nearest enclosing try block's catch statement. If no enclosing try exists, program execution will halt and return the error. Code inside a try block will behave as if the try does not exist, and  code inside the catch will do the same (only the error string from the try will be preserved). Because of this the try and catch statements interact with the rest of the program as if the try/catch statement didn't exist and thus must have the same type unless the error is propogated.
 When running dynamically all type mismatches will throw errors that the user can catch and handle. 
 Since errors are named, catch statements can handle each error differently.
 
